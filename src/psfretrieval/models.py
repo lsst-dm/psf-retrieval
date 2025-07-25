@@ -1,15 +1,13 @@
 """Models for psf-retrieval."""
 
-from typing import Self
-
 from pydantic import BaseModel, Field
 from safir.metadata import Metadata as SafirMetadata
 from safir.uws import ParametersModel
-from vo_models.uws import Parameters
+from vo_models.uws import MultiValuedParameter, Parameter, Parameters
 
-from .domain import WorkerPsfretrievalModel
+from .domain import WorkerPsfRetrievalParameters
 
-__all__ = ["Index"]
+__all__ = ["Index", "PsfRetrievalParameters", "PsfRetrievalXmlParameters"]
 
 
 class Index(BaseModel):
@@ -26,7 +24,7 @@ class Index(BaseModel):
     metadata: SafirMetadata = Field(..., title="Package metadata")
 
 
-class PsfretrievalXmlParameters(Parameters):
+class PsfRetrievalXmlParameters(Parameters):
     """XML representation of job parameters.
 
     Add fields here for all the input parameters to the job in the format
@@ -35,8 +33,18 @@ class PsfretrievalXmlParameters(Parameters):
     ``Parameter``.
     """
 
+    id: MultiValuedParameter
+    ra: MultiValuedParameter = Field(
+        [], description="One or more RA values (deg)"
+    )
+    dec: MultiValuedParameter = Field(
+        [], description="One or more Dec values (deg)"
+    )
 
-class PsfretrievalParameters(ParametersModel[WorkerPsfretrievalModel, PsfretrievalXmlParameters]):
+
+class PsfRetrievalParameters(
+    ParametersModel[WorkerPsfRetrievalParameters, PsfRetrievalXmlParameters]
+):
     """Model for job parameters.
 
     Add fields here for all the input parameters to a job, and then update
@@ -44,8 +52,32 @@ class PsfretrievalParameters(ParametersModel[WorkerPsfretrievalModel, Psfretriev
     conversions.
     """
 
-    def to_worker_parameters(self) -> WorkerPsfretrievalModel:
-        return WorkerPsfretrievalModel()
+    id: str = Field(
+        ..., title="Dataset ID", description="Identifier of the PSF dataset"
+    )
+    ra: float = Field(
+        ...,
+        title="Right Ascension",
+        description="ICRS right ascension in decimal degrees",
+    )
+    dec: float = Field(
+        ...,
+        title="Declination",
+        description="ICRS declination in decimal degrees",
+    )
 
-    def to_xml_model(self) -> PsfretrievalXmlParameters:
-        return PsfretrievalXmlParameters()
+    def to_worker_parameters(self) -> WorkerPsfRetrievalParameters:
+        """Convert to the worker (domain) model."""
+        return WorkerPsfRetrievalParameters(
+            dataset_id=self.id,
+            ra=self.ra,
+            dec=self.dec,
+        )
+
+    def to_xml_model(self) -> PsfRetrievalXmlParameters:
+        """Convert to the flat XML model for IVOA UWS."""
+        return PsfRetrievalXmlParameters(
+            id=[Parameter(id="id", value=self.id)],
+            ra=[Parameter(id="ra", value=str(self.ra))],
+            dec=[Parameter(id="dec", value=str(self.dec))],
+        )
