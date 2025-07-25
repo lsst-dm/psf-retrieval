@@ -8,10 +8,11 @@ from safir.logging import LogLevel, Profile
 from safir.uws import UWSApplication, UWSAppSettings, UWSConfig, UWSRoute
 from vo_models.uws import JobSummary
 
-from .dependencies import post_params_dependency
-from .models import PsfretrievalParameters, PsfretrievalXmlParameters
+from .dependencies import get_params_dependency, post_params_dependency
+from .models import PsfRetrievalParameters, PsfRetrievalXmlParameters
+from .workers.uws import WorkerSettings
 
-__all__ = ["Config", "config"]
+__all__ = ["Config", "config", "uws"]
 
 
 class Config(UWSAppSettings):
@@ -45,14 +46,23 @@ class Config(UWSAppSettings):
     def uws_config(self) -> UWSConfig:
         """Corresponding configuration for the UWS subsystem."""
         return self.build_uws_config(
-            job_summary_type=JobSummary[PsfretrievalXmlParameters],
-            parameters_type=PsfretrievalParameters,
-            worker="psf_retrieval",
             async_post_route=UWSRoute(
                 dependency=post_params_dependency,
-                summary="Create async psf-retrieval job",
-                description="Create a new UWS job for psf-retrieval",
+                summary="Create async PSF retrieval job",
+                description=(
+                    "Asynchronously create a UWS job to retrieve a "
+                    "point spread function image"
+                ),
             ),
+            sync_post_route=None,  # Do we need POST sync?
+            sync_get_route=UWSRoute(
+                dependency=get_params_dependency,
+                summary="Synchronous PSF retrieval",
+                description="Synchronously retrieve a PSF image via URL query",
+            ),
+            job_summary_type=JobSummary[PsfRetrievalXmlParameters],
+            parameters_type=PsfRetrievalParameters,
+            worker=WorkerSettings,
         )
 
 

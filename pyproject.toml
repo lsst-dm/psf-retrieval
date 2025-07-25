@@ -17,8 +17,16 @@ classifiers = [
     "Operating System :: POSIX",
     "Typing :: Typed",
 ]
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.100",
+    "pydantic>2",
+    "pydantic-settings>=2.8",
+    "safir[uws]>=9.0.1",
+    "structlog>23.3.0",
+    "uvicorn[standard]>=0.34",
+    "vo-models>=0.4.1",
+]
 dynamic = ["version"]
 
 [project.urls]
